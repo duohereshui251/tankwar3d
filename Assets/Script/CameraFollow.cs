@@ -37,7 +37,9 @@ public class CameraFollow : MonoBehaviour
             return;
         if (Camera.main == null)
             return;
+        // 镜头距离
         Zoom();
+        // 旋转
         Rotate();
         Roll();
         Vector3 targetPos = target.transform.position;
