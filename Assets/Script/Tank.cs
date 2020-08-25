@@ -5,6 +5,15 @@ using UnityEngine;
 
 public class Tank : MonoBehaviour
 {
+    // 子弹
+    public GameObject bullet;
+    // 上一次开跑时间
+    public float lastShootTime = 0;
+    // 开炮的时间间隔
+    private float shootInterval = 0.5f;
+
+    // 重心
+    private Rigidbody rigi;
     // 履带
     private Transform tracks;
     // 轮子
@@ -39,18 +48,22 @@ public class Tank : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        rigi = gameObject.GetComponent<Rigidbody>();
+        rigi.centerOfMass = new Vector3(rigi.centerOfMass.x, -0.1f,rigi.centerOfMass.z);
         turret = transform.Find("turret");
         gun = turret.Find("gun");
-        Rigidbody rigi = gameObject.GetComponent<Rigidbody>();
-        //Vector3 l = transform.localPosition;
-        //rigi.centerOfMass = new Vector3(l.x, l.y ,l.z);
+
+
         wheels = transform.Find("wheels");
         tracks = transform.Find("tracks");
+
     }
 
     // Update is called once per frame
     void Update()
     {
+        // 修改重心
+        
         //  玩家控制操控
         PlayerCtrl();
 
@@ -74,7 +87,7 @@ public class Tank : MonoBehaviour
                 axleinfo.leftWheel.brakeTorque = brakeTorque;
                 axleinfo.rightWheel.brakeTorque = brakeTorque;
             }
-            if(axleInfos[1] != null && axleinfo == axleInfos[1])
+            if (axleInfos[1] != null && axleinfo == axleInfos[1])
             {
                 WheelsRotation(axleInfos[1].leftWheel);
                 TrackMove();
@@ -155,7 +168,7 @@ public class Tank : MonoBehaviour
         steering = maxSteeringAngle * Input.GetAxis("Horizontal");
         // 制动
         brakeTorque = 0;
-        foreach(AxleInfo axleInfo in axleInfos)
+        foreach (AxleInfo axleInfo in axleInfos)
         {
             // rpm 轮轴旋转速度
             if (axleInfo.leftWheel.rpm > 5 && motor < 0)
@@ -166,6 +179,9 @@ public class Tank : MonoBehaviour
         }
         turretRotTarget = Camera.main.transform.eulerAngles.y;
         turretRollTarget = Camera.main.transform.eulerAngles.x;
+        // 发射炮弹
+        if (Input.GetMouseButton(0))
+            Shoot();
     }
     public void WheelsRotation(WheelCollider collider)
     {
@@ -175,7 +191,7 @@ public class Tank : MonoBehaviour
         Quaternion rotation;
         collider.GetWorldPose(out position, out rotation);
         // 旋转每个轮子
-        foreach(Transform wheel in wheels)
+        foreach (Transform wheel in wheels)
         {
             wheel.rotation = rotation;
         }
@@ -185,21 +201,32 @@ public class Tank : MonoBehaviour
         if (tracks == null)
             return;
         float offset = 0;
-        if(wheels.GetChild(0) != null)
+        if (wheels.GetChild(0) != null)
         {
             offset = wheels.GetChild(0).localEulerAngles.x / 90f;
         }
-        foreach(Transform track in tracks)
+        foreach (Transform track in tracks)
         {
             MeshRenderer mr = track.gameObject.GetComponent<MeshRenderer>();
-            if(mr == null)
+            if (mr == null)
             {
                 continue;
             }
             Material mtl = mr.material;
             mtl.mainTextureOffset = new Vector2(0, offset);
         }
-            
-                
+
+
+    }
+    public void Shoot()
+    {
+        Debug.Log("Shoot!");
+        if (Time.time - lastShootTime < shootInterval)
+            return;
+        if (bullet == null)
+            return;
+        Vector3 pos = gun.position + gun.forward * 5;
+        Instantiate(bullet, pos, gun.rotation);
+        lastShootTime = Time.time;
     }
 }
