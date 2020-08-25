@@ -31,8 +31,6 @@ public class CameraFollow : MonoBehaviour
     // Update is called once per frame
     void LateUpdate()
     {
-        Debug.Log("LateUpdate");
-
         if (target == null)
             return;
         if (Camera.main == null)
@@ -68,7 +66,7 @@ public class CameraFollow : MonoBehaviour
     void Rotate()
     {
         float w = Input.GetAxis("Mouse X") * rotSpeed;
-        Debug.Log("Rotate: " + w.ToString());
+
         rot -= w;
     }
     void Roll()
@@ -83,12 +81,14 @@ public class CameraFollow : MonoBehaviour
 
     void Zoom()
     {
-        if(Input.GetAxis("Mouse ScrollWheel") > 0)
+        if (Input.GetAxis("Mouse ScrollWheel") > 0)
         {
             if (distance > minDistance)
                 distance -= zoomSpeed;
 
-        }else if(Input.GetAxis("Mouse ScrollWheel") < 0){
+        }
+        else if (Input.GetAxis("Mouse ScrollWheel") < 0)
+        {
             if (distance < maxDistance)
                 distance += zoomSpeed;
         }

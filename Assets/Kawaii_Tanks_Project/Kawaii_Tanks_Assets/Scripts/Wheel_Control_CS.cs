@@ -38,7 +38,7 @@ namespace ChobiAssets.KTP
 		{
 			this.gameObject.layer = 11; // Layer11 >> for MainBody.
 			thisRigidbody = GetComponent < Rigidbody > ();
-			thisRigidbody.solverIterationCount = solverIterationCount;
+			thisRigidbody.solverIterations = solverIterationCount;
 			/* for reducing Calls.
 			rotateScripts = GetComponentsInChildren <Wheel_Rotate_CS> ();
 			*/
