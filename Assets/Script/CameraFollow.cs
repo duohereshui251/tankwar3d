@@ -17,9 +17,9 @@ public class CameraFollow : MonoBehaviour
 
     // 纵向角度
     // 默认纵向角度为30度
-    public float roll = 30f * Mathf.PI * 2 / 360;
+    public float roll = 20f * Mathf.PI * 2 / 360;
     private float rollSpeed = 0.1f;
-    private float maxRoll = 60f * Mathf.PI * 2 / 360;
+    private float maxRoll = 30f * Mathf.PI * 2 / 360;
     private float minRoll = 0;
     private GameObject target;
     // Start is called before the first frame update
@@ -81,11 +81,12 @@ public class CameraFollow : MonoBehaviour
 
     void Zoom()
     {
+        // 鼠标滚轮控制摄像头距离
         if (Input.GetAxis("Mouse ScrollWheel") > 0)
         {
             if (distance > minDistance)
                 distance -= zoomSpeed;
-
+            
         }
         else if (Input.GetAxis("Mouse ScrollWheel") < 0)
         {

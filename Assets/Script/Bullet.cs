@@ -12,21 +12,37 @@ public class Bullet : MonoBehaviour
     void Start()
     {
         instantiateTime = Time.time;
-        
     }
 
     // Update is called once per frame
     void Update()
     {
+        Debug.Log("Bullet update");
         transform.position += transform.forward * speed * Time.deltaTime;
         if (Time.time  - instantiateTime > maxLiftTime)
         Destroy(gameObject);
     }
 
-    void OnCollisionEnter(Collision collectionInfo)
+    void OnCollisionEnter(Collision collisionInfo)
     {
-        
-        //Instantiate(explode, transform.position, transform.rotation);
+        Debug.Log("Bullet destroy");
+        // 爆炸效果
+        Instantiate(explode, transform.position, transform.rotation);
         Destroy(gameObject);
+        // 击中坦克
+        Tank tank = collisionInfo.gameObject.GetComponent<Tank>();
+        if(tank != null)
+        {
+            float att = GetAtt();
+            tank.BeAttacked(att);
+        }
+    }
+    // 炮弹飞行时间越久，攻击力越小
+    private float GetAtt()
+    {
+        float att = 100 - (Time.time - instantiateTime) * 40;
+        if (att < 1)
+            att = 1;
+        return att;
     }
 }

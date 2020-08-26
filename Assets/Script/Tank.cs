@@ -5,8 +5,20 @@ using UnityEngine;
 
 public class Tank : MonoBehaviour
 {
+    // 操控类型
+    public enum CtrlType
+    {
+        none,
+        player,
+        computer
+    }
+    public CtrlType ctrlType = CtrlType.player;
+    // 生命值
+    private float maxHp = 100;
+    public float hp = 100;
     // 子弹
     public GameObject bullet;
+    public GameObject destoryEffect;
     // 上一次开跑时间
     public float lastShootTime = 0;
     // 开炮的时间间隔
@@ -41,15 +53,11 @@ public class Tank : MonoBehaviour
     private float steering = 0;
     public float maxSteeringAngle;
 
-    //// 移动速度
-    //public float speed = 5f;
-    //public float steer = 50;
 
-    // Start is called before the first frame update
     void Start()
     {
         rigi = gameObject.GetComponent<Rigidbody>();
-        rigi.centerOfMass = new Vector3(rigi.centerOfMass.x, -0.1f,rigi.centerOfMass.z);
+        rigi.centerOfMass = new Vector3(rigi.centerOfMass.x, -0.1f, rigi.centerOfMass.z);
         turret = transform.Find("turret");
         gun = turret.Find("gun");
 
@@ -63,7 +71,7 @@ public class Tank : MonoBehaviour
     void Update()
     {
         // 修改重心
-        
+
         //  玩家控制操控
         PlayerCtrl();
 
@@ -164,6 +172,8 @@ public class Tank : MonoBehaviour
     }
     public void PlayerCtrl()
     {
+        if (ctrlType != CtrlType.player)
+            return;
         motor = MaxMotorTorque * Input.GetAxis("Vertical");
         steering = maxSteeringAngle * Input.GetAxis("Horizontal");
         // 制动
@@ -177,8 +187,9 @@ public class Tank : MonoBehaviour
                 brakeTorque = MaxBrakeTorque;
             continue;
         }
-        turretRotTarget = Camera.main.transform.eulerAngles.y;
-        turretRollTarget = Camera.main.transform.eulerAngles.x;
+        //turretRotTarget = Camera.main.transform.eulerAngles.y;
+        //turretRollTarget = Camera.main.transform.eulerAngles.x;
+        TargetSignPos();
         // 发射炮弹
         if (Input.GetMouseButton(0))
             Shoot();
@@ -220,13 +231,62 @@ public class Tank : MonoBehaviour
     }
     public void Shoot()
     {
-        Debug.Log("Shoot!");
+        Debug.Log("shoot");
+
         if (Time.time - lastShootTime < shootInterval)
             return;
         if (bullet == null)
+        {
+            Debug.Log("bullet is none");
             return;
+        }
         Vector3 pos = gun.position + gun.forward * 5;
         Instantiate(bullet, pos, gun.rotation);
         lastShootTime = Time.time;
+        // 自己打自己
+        //BeAttacked(30f);
+
+    }
+    public void BeAttacked(float att)
+    {
+        if (hp <= 0)
+            return;
+        if (hp > 0)
+        {
+            hp -= att;
+        }
+        if (hp <= 0)
+        {
+            GameObject destoryObj = (GameObject)Instantiate(destoryEffect);
+            destoryObj.transform.SetParent(transform, false);
+            destoryObj.transform.localPosition = new Vector3(0,0, 0.3f);
+            ctrlType = CtrlType.none;
+
+        }
+
+    }
+    public void TargetSignPos()
+    {
+        Vector3 hitPoint = Vector3.zero;
+        RaycastHit raycastHit;
+
+        Vector3 centerVec = new Vector3(Screen.width / 2, Screen.height / 2, 0);
+        Ray ray = Camera.main.ScreenPointToRay(centerVec);
+
+        // 射线检测, 获取HitPoint
+        if( Physics.Raycast(ray, out raycastHit, 400.0f))
+        {
+            hitPoint = raycastHit.point;
+        }
+        else
+        {
+            hitPoint = ray.GetPoint(400);
+        }
+        Vector3 dir = hitPoint - turret.position;
+        Quaternion angle = Quaternion.LookRotation(dir);
+        turretRotTarget = angle.eulerAngles.y;
+        turretRollTarget = angle.eulerAngles.x;
+        Transform targetCube = GameObject.Find("TargetCube").transform;
+        targetCube.position = hitPoint;
     }
 }
