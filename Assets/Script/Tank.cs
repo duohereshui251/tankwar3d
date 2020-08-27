@@ -53,6 +53,17 @@ public class Tank : MonoBehaviour
     private float steering = 0;
     public float maxSteeringAngle;
 
+    // GUI
+    // 击杀提示
+    public Texture2D killUI;
+    private float killUIStartTime = float.MinValue;
+
+    // 准心
+    public Texture2D centerSight;
+    public Texture2D tankSight;
+    // 生命条
+    public Texture2D hpBarBg;
+    public Texture2D hpBar;
 
     void Start()
     {
@@ -74,7 +85,7 @@ public class Tank : MonoBehaviour
 
         //  玩家控制操控
         PlayerCtrl();
-
+        
         foreach (AxleInfo axleinfo in axleInfos)
         {
             // 控制转向
@@ -119,6 +130,14 @@ public class Tank : MonoBehaviour
         TurretRotation();
         TurretRoll();
 
+    }
+    private void OnGUI()
+    {
+        if (ctrlType != CtrlType.player)
+            return;
+        DrawSight();
+        DrawHp();
+        DrawKillUI();
     }
 
     public void TurretRotation()
@@ -241,13 +260,17 @@ public class Tank : MonoBehaviour
             return;
         }
         Vector3 pos = gun.position + gun.forward * 5;
-        Instantiate(bullet, pos, gun.rotation);
+        GameObject bulletObj = (GameObject)Instantiate(bullet, pos, gun.rotation);
+        Bullet bulletCmp = bulletObj.GetComponent<Bullet>();
+        if (bulletCmp != null)
+            bulletCmp.attackTank = this.gameObject;
+
         lastShootTime = Time.time;
         // 自己打自己
         //BeAttacked(30f);
 
     }
-    public void BeAttacked(float att)
+    public void BeAttacked(float att, GameObject attackTank)
     {
         if (hp <= 0)
             return;
@@ -259,11 +282,22 @@ public class Tank : MonoBehaviour
         {
             GameObject destoryObj = (GameObject)Instantiate(destoryEffect);
             destoryObj.transform.SetParent(transform, false);
-            destoryObj.transform.localPosition = new Vector3(0,0, 0.3f);
+            destoryObj.transform.localPosition = new Vector3(0, 0, 0.3f);
             ctrlType = CtrlType.none;
 
+            // 显示击杀提示
+            if(attackTank != null)
+            {
+                Tank tankCmp = attackTank.GetComponent<Tank>();
+                if (tankCmp != null && tankCmp.ctrlType == CtrlType.player)
+                    tankCmp.StartDrawKill();
+            }
         }
 
+    }
+    public void StartDrawKill()
+    {
+        killUIStartTime = Time.time;
     }
     public void TargetSignPos()
     {
@@ -274,7 +308,7 @@ public class Tank : MonoBehaviour
         Ray ray = Camera.main.ScreenPointToRay(centerVec);
 
         // 射线检测, 获取HitPoint
-        if( Physics.Raycast(ray, out raycastHit, 400.0f))
+        if (Physics.Raycast(ray, out raycastHit, 400.0f))
         {
             hitPoint = raycastHit.point;
         }
@@ -286,7 +320,80 @@ public class Tank : MonoBehaviour
         Quaternion angle = Quaternion.LookRotation(dir);
         turretRotTarget = angle.eulerAngles.y;
         turretRollTarget = angle.eulerAngles.x;
-        Transform targetCube = GameObject.Find("TargetCube").transform;
-        targetCube.position = hitPoint;
+        //Transform targetCube = GameObject.Find("TargetCube").transform;
+        //targetCube.position = hitPoint;
+    }
+
+    public Vector3 CalExplodePoint()
+    {
+        // 碰撞信息和碰撞点
+        Vector3 hitPoint = Vector3.zero;
+        RaycastHit hit;
+
+        // 沿着炮管方向的射线
+        Vector3 pos = gun.position + gun.forward * 5;
+        Ray ray = new Ray(pos, gun.forward);
+
+        // 射线检测
+        if (Physics.Raycast(ray, out hit, 400.0f))
+        {
+            hitPoint = hit.point;
+        }
+        else
+        {
+            hitPoint = ray.GetPoint(400);
+        }
+        //Transform explodeCube = GameObject.Find("ExplodeCube").transform;
+        //explodeCube.position = hitPoint;
+
+        return hitPoint;
+    }
+
+    public void DrawSight()
+    {
+        // 实际射击位置
+        Vector3 explodePoint = CalExplodePoint();
+        // 获取坦克准心
+        Vector3 screenPoint = Camera.main.WorldToScreenPoint(explodePoint);
+
+        // 绘制坦克准心
+        Rect tankRect = new Rect(screenPoint.x - tankSight.width / 2,
+            Screen.height - screenPoint.y - tankSight.height / 2,
+            tankSight.width, tankSight.height);
+        GUI.DrawTexture(tankRect, tankSight);
+
+        // 绘制中心准心
+        Rect centerRect = new Rect(Screen.width / 2 - centerSight.width / 2,
+            Screen.height / 2 - centerSight.height / 2,
+            centerSight.width,
+            centerSight.height
+            );
+        GUI.DrawTexture(centerRect, centerSight);
+
+    }
+    public void DrawHp()
+    {
+        // 底框
+        Rect bgRect = new Rect(30, Screen.height - hpBarBg.height - 15,
+            hpBarBg.width, hpBarBg.height);
+        GUI.DrawTexture(bgRect, hpBarBg);
+
+        // 指示条
+        float width = hp * 102 / maxHp;
+        Rect heRect = new Rect(bgRect.x + 29, bgRect.y + 9, width, hpBar.height);
+        GUI.DrawTexture(heRect, hpBar);
+        // 文字
+        string text = Mathf.Ceil(hp).ToString() + "/" + Mathf.Ceil(maxHp).ToString();
+        Rect textRect = new Rect(bgRect.x + 80, bgRect.y - 10, 50, 50);
+        GUI.Label(textRect, text);
+    }
+    private void DrawKillUI()
+    {
+        if(Time.time - killUIStartTime < 1f)
+        {
+            Rect rect = new Rect(Screen.width / 2 - killUI.width / 2, 30,
+                killUI.width, killUI.height);
+            GUI.DrawTexture(rect, killUI);
+        }
     }
 }

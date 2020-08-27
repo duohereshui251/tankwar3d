@@ -19,13 +19,14 @@ public class CameraFollow : MonoBehaviour
     // 默认纵向角度为30度
     public float roll = 20f * Mathf.PI * 2 / 360;
     private float rollSpeed = 0.1f;
-    private float maxRoll = 30f * Mathf.PI * 2 / 360;
-    private float minRoll = 0;
+    private float maxRoll = 50f * Mathf.PI * 2 / 360;
+    private float minRoll = -10f * Mathf.PI * 2 / 360;
     private GameObject target;
     // Start is called before the first frame update
     void Start()
     {
-        target = GameObject.Find("tank");
+        //target = GameObject.Find("tank");
+        SetTarget(GameObject.Find("tank"));
     }
 
     // Update is called once per frame
@@ -49,6 +50,7 @@ public class CameraFollow : MonoBehaviour
         cameraPos.y = targetPos.y + height;
 
         Camera.main.transform.position = cameraPos;
+
         Camera.main.transform.LookAt(target.transform);
     }
 
@@ -86,7 +88,7 @@ public class CameraFollow : MonoBehaviour
         {
             if (distance > minDistance)
                 distance -= zoomSpeed;
-            
+
         }
         else if (Input.GetAxis("Mouse ScrollWheel") < 0)
         {

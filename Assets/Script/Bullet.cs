@@ -8,6 +8,7 @@ public class Bullet : MonoBehaviour
     public GameObject explode;
     public float maxLiftTime = 2f;
     public float instantiateTime = 0f;
+    public GameObject attackTank;
     // Start is called before the first frame update
     void Start()
     {
@@ -17,6 +18,7 @@ public class Bullet : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        // TODO: 增加弹道
         Debug.Log("Bullet update");
         transform.position += transform.forward * speed * Time.deltaTime;
         if (Time.time  - instantiateTime > maxLiftTime)
@@ -27,6 +29,9 @@ public class Bullet : MonoBehaviour
     {
         Debug.Log("Bullet destroy");
         // 爆炸效果
+        if (collisionInfo.gameObject == attackTank)
+            return;
+
         Instantiate(explode, transform.position, transform.rotation);
         Destroy(gameObject);
         // 击中坦克
@@ -34,7 +39,7 @@ public class Bullet : MonoBehaviour
         if(tank != null)
         {
             float att = GetAtt();
-            tank.BeAttacked(att);
+            tank.BeAttacked(att, attackTank);
         }
     }
     // 炮弹飞行时间越久，攻击力越小
