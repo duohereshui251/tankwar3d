@@ -16,6 +16,8 @@ public class Tank : MonoBehaviour
     // 生命值
     private float maxHp = 100;
     public float hp = 100;
+    // AI
+    private AI ai;
     // 子弹
     public GameObject bullet;
     public GameObject destoryEffect;
@@ -76,6 +78,14 @@ public class Tank : MonoBehaviour
         wheels = transform.Find("wheels");
         tracks = transform.Find("tracks");
 
+        // 人工智能
+        if (ctrlType == CtrlType.computer)
+        {
+            Debug.Log(" set type computer");
+            ai = gameObject.AddComponent<AI>();
+            ai.tank = this;
+        }
+
     }
 
     // Update is called once per frame
@@ -84,8 +94,10 @@ public class Tank : MonoBehaviour
         // 修改重心
 
         //  玩家控制操控
+        // 获取用户输入信息，给motor，streer，brakeTorque赋值
         PlayerCtrl();
-        
+        ComputerCtrl();
+        NoneCtrl();
         foreach (AxleInfo axleinfo in axleInfos)
         {
             // 控制转向
@@ -113,20 +125,9 @@ public class Tank : MonoBehaviour
             }
 
         }
-        //// 旋转
-        //float x = Input.GetAxis("Horizontal");
-        //transform.Rotate(0, x * steer * Time.deltaTime, 0);
 
-        //// 前进后退
-        //float y = Input.GetAxis("Vertical");
-        //Vector3 s = y * transform.forward * speed * Time.deltaTime;
-        //transform.transform.position += s;
-        //// 炮塔角度
-        //turretRotTarget = Camera.main.transform.eulerAngles.y;
-        //turretRollTarget = Camera.main.transform.eulerAngles.x;
-        //// 炮筒角度
-
-        // 炮塔炮管旋转
+        // 根据turretRotTarget,turretRollTarget
+        // 来设置GameObject turret炮塔, gun炮管旋转
         TurretRotation();
         TurretRoll();
 
@@ -191,6 +192,7 @@ public class Tank : MonoBehaviour
     }
     public void PlayerCtrl()
     {
+        // 设置好motor, streering, brakeTorque
         if (ctrlType != CtrlType.player)
             return;
         motor = MaxMotorTorque * Input.GetAxis("Vertical");
@@ -206,12 +208,41 @@ public class Tank : MonoBehaviour
                 brakeTorque = MaxBrakeTorque;
             continue;
         }
-        //turretRotTarget = Camera.main.transform.eulerAngles.y;
-        //turretRollTarget = Camera.main.transform.eulerAngles.x;
+
+        // 设置炮台角度，目的是设置好turretRotTarget， turretRollTarget
         TargetSignPos();
         // 发射炮弹
         if (Input.GetMouseButton(0))
             Shoot();
+    }
+
+    public void ComputerCtrl()
+    {
+        if (ctrlType != CtrlType.computer)
+            return;
+
+        // 设置好motor, streering, brakeTorque
+
+        steering = ai.GetSteering();
+        motor = ai.GetMotor();
+        brakeTorque = ai.GetBrakeTorque();
+
+        // 旋转炮管对准目标，如果没有目标回到原来的角度
+        Vector3 rot = ai.GetTurretTarget();
+        turretRotTarget = rot.y;
+        turretRollTarget = rot.x;
+
+        // 射击
+        if (ai.isShoot())
+            Shoot();
+    }
+    public void NoneCtrl()
+    {
+        if (ctrlType != CtrlType.none)
+            return;
+        motor = 0;
+        steering = 0;
+        brakeTorque = MaxBrakeTorque / 2;
     }
     public void WheelsRotation(WheelCollider collider)
     {
@@ -277,6 +308,10 @@ public class Tank : MonoBehaviour
         if (hp > 0)
         {
             hp -= att;
+            if (ai != null)
+            {
+                ai.OnAttacked(attackTank);
+            }
         }
         if (hp <= 0)
         {
@@ -286,7 +321,7 @@ public class Tank : MonoBehaviour
             ctrlType = CtrlType.none;
 
             // 显示击杀提示
-            if(attackTank != null)
+            if (attackTank != null)
             {
                 Tank tankCmp = attackTank.GetComponent<Tank>();
                 if (tankCmp != null && tankCmp.ctrlType == CtrlType.player)
@@ -320,8 +355,7 @@ public class Tank : MonoBehaviour
         Quaternion angle = Quaternion.LookRotation(dir);
         turretRotTarget = angle.eulerAngles.y;
         turretRollTarget = angle.eulerAngles.x;
-        //Transform targetCube = GameObject.Find("TargetCube").transform;
-        //targetCube.position = hitPoint;
+
     }
 
     public Vector3 CalExplodePoint()
@@ -389,7 +423,7 @@ public class Tank : MonoBehaviour
     }
     private void DrawKillUI()
     {
-        if(Time.time - killUIStartTime < 1f)
+        if (Time.time - killUIStartTime < 1f)
         {
             Rect rect = new Rect(Screen.width / 2 - killUI.width / 2, 30,
                 killUI.width, killUI.height);
